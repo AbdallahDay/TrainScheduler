@@ -12,42 +12,82 @@ firebase.initializeApp(config);
 
 var database = firebase.database();
 
-function NextArrival_Time(first, frequency) {
-    var t = moment().diff(first, "minutes");
-    return moment(first).add(Math.ceil(t / frequency) * frequency);
+function NextArrival(first, frequency) {
+    var now = moment();
+    var t = Math.abs(now.diff(first, "minutes"));
+    return first.add(Math.ceil(t / frequency) * frequency);
 }
 
-function NextArrival_MinutesAway(first, frequency) {
+function MinutesAway(first, frequency) {
     var t = moment().diff(first, "minutes");
     return frequency - (t % frequency);
+}
+
+function Valid() {
+    if (!$("#name").val()) {
+        //name field empty
+        console.log("name field empty");
+        $("#name").parent
+        return false;
+    }
+
+    if (!$("#destination").val()) {
+        //destination field empty
+        console.log("destination field empty");
+        return false;
+    }
+
+    if (!$("#first").val()) {
+        //first train field empty
+        console.log("first train field empty");
+        return false;
+    }
+    
+    if (!moment($("#first").val().trim(), "HH:mm", true).isValid()) {
+        //invalid input
+        console.log("first train field contains incorrect format");
+        return false;
+    }
+
+    if (!$("#frequency").val()) {
+        //frquency field empty
+        console.log("frequency field empty");
+        return false;
+    }
+
+    if (!Number.parseInt($("#frequency").val().trim())) {
+        //NaN
+        console.log("frequency field NaN");
+        return false;
+    }
+
+    return true;
 }
 
 $(document).ready(function() {
     
     $("#btnSubmit").on("click", function() {
-        var name = $("#name").val().trim();
-        var destination = $("#destination").val().trim();
-        var first = moment($("#first").val().trim(), "HH:mm");
-        var frequency = Number.parseInt($("#frequency").val().trim());
+        if (Valid()) {
+            var name = $("#name").val().trim();
+            var destination = $("#destination").val().trim();
+            var first = $("#first").val().trim();
+            var frequency = Number.parseInt($("#frequency").val().trim());
 
-        //TODO: perform form validation
-        //name - empty
-        //destination - empty
-        //first - empty or invalid format (use first.isValid())
-        //frequency - empty or NaN
+            var train = {
+                name: name,
+                destination: destination,
+                first: first,
+                frequency: frequency
+            }
+            
+            console.log(train);
+            console.log(train.first);
 
-        var train = {
-            name: name,
-            destination: destination,
-            first: first,
-            frequency: frequency
+            //send to firebase
+            database.ref().push(train);
+
+            console.log("pushed to firebase");
         }
-        console.log(train);
-
-        //send to firebase
-        database.ref().push(train);
-
-        console.log("pushed to firebase");
     });
 
     database.ref().on("child_added", function(snapshot) {
@@ -56,11 +96,13 @@ $(document).ready(function() {
         console.log("New child added:");
         console.log(train);
 
+        var first = moment(train.first, "HH:mm", true);
+
         var name = train.name;
         var destination = train.destination;
         var frequency = train.frequency;
-        var next = NextArrival_Time(train.first, train.frequency).format("hh:mm A");
-        var minsAway = NextArrival_MinutesAway(train.first, train.frequency);
+        var next = NextArrival(first, train.frequency).format("hh:mm A");
+        var minsAway = MinutesAway(first, train.frequency);
 
         var tr = $("<tr>");
 
