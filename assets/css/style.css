@@ -2,6 +2,11 @@
     margin-bottom: 20px;
 }
 
+#header {
+    padding: 50px;
+    text-align: center;
+}
+
 th[scope="col"] {
     border-top: none;
 }

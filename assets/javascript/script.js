@@ -13,17 +13,23 @@ firebase.initializeApp(config);
 var database = firebase.database();
 
 function NextArrival(first, frequency) {
-    var now = moment();
-    var t = Math.abs(now.diff(first, "minutes"));
-    return first.add(Math.ceil(t / frequency) * frequency);
+    var tMinus = MinutesAway(first, frequency);
+    return moment().add(tMinus, "minutes");
 }
 
 function MinutesAway(first, frequency) {
+    var now = moment();
+    
+    if (first.isAfter(now)) {
+        first.subtract(1, "days");
+    }
+
     var t = moment().diff(first, "minutes");
     return frequency - (t % frequency);
 }
 
 function Valid() {
+    //form validation
     if (!$("#name").val()) {
         //name field empty
         console.log("name field empty");
@@ -79,22 +85,23 @@ $(document).ready(function() {
                 first: first,
                 frequency: frequency
             }
-            
-            console.log(train);
-            console.log(train.first);
 
             //send to firebase
-            database.ref().push(train);
-
-            console.log("pushed to firebase");
+            database.ref().push(
+                train,
+                function(error) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log(`${train.name} added successfully!`);
+                    }
+                }
+            );
         }
     });
 
     database.ref().on("child_added", function(snapshot) {
         var train = snapshot.val();
-
-        console.log("New child added:");
-        console.log(train);
 
         var first = moment(train.first, "HH:mm", true);
 
